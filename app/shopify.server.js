@@ -3,6 +3,7 @@ import {
   ApiVersion,
   AppDistribution,
   shopifyApp,
+  DeliveryMethod
 } from "@shopify/shopify-app-react-router/server";
 import { PrismaSessionStorage } from "@shopify/shopify-app-session-storage-prisma";
 import prisma from "./db.server";
@@ -16,6 +17,26 @@ const shopify = shopifyApp({
   authPathPrefix: "/auth",
   sessionStorage: new PrismaSessionStorage(prisma),
   distribution: AppDistribution.AppStore,
+  webhooks: {
+  CARTS_UPDATE: {
+    deliveryMethod: DeliveryMethod.Http,
+    callbackUrl: '/webhooks/carts/update',
+  },
+},
+
+hooks: {
+  afterAuth: async ({ session }) => {
+    try {
+      // Register only carts/create webhook
+      await shopify.registerWebhooks({ session });
+      console.log(`✅ Webhook registered for: ${session.shop}`);
+      console.log(`- CARTS_UPDATE: /webhooks/carts/update`);
+    } catch (error) {
+      console.error('❌ Webhook registration failed:', error);
+    }
+  },
+},
+
   ...(process.env.SHOP_CUSTOM_DOMAIN
     ? { customShopDomains: [process.env.SHOP_CUSTOM_DOMAIN] }
     : {}),

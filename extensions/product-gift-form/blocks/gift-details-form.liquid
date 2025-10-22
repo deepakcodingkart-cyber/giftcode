@@ -1,10 +1,3 @@
-{%- comment -%}
-  App Block: Gift Details Form
-  Shows the form if:
-  1. The product title contains the word "gift" (case-insensitive).
-  2. The product belongs to a collection with the handle "gift-section".
-{%- endcomment -%}
-
 {% liquid
   assign product_title_lower = product.title | downcase
   assign is_gift_product = false
@@ -30,7 +23,7 @@
 {% endcomment %}
 {% if is_gift_product %}
 
-  <div class="app-gift-form-container">
+  <div class="app-gift-form-container" id="gift-form-container">
     <h2>Personalize Your Gift</h2>
     <p>Enter the recipient's details and your desired shipping date.</p>
 
@@ -67,14 +60,17 @@
       }
     </style>
 
+    {% comment %} Custom Gift Form Fields (NOTE: 'name' attribute is intentionally removed) {% endcomment %}
     <div class="form-field">
       <label for="gift-recipient-name">Recipient Name</label>
       <input
         type="text"
         id="gift-recipient-name"
-        name="properties[Recipient Name]"
+        data-gift-property-name="Recipient Name" 
         placeholder="e.g., Jane Doe"
         required
+        class="gift-form-input"
+        value=""
       >
     </div>
 
@@ -83,9 +79,11 @@
       <input
         type="email"
         id="gift-recipient-email"
-        name="properties[Recipient Email]"
+        data-gift-property-name="Recipient Email" 
         placeholder="e.g., jane@example.com"
         required
+        class="gift-form-input"
+        value=""
       >
     </div>
 
@@ -93,10 +91,11 @@
       <label for="gift-message">Gift Message (max 200 chars)</label>
       <textarea
         id="gift-message"
-        name="properties[Gift Message]"
+        data-gift-property-name="Gift Message" 
         placeholder="Write your special message here..."
         maxlength="200"
         rows="4"
+        class="gift-form-input"
       ></textarea>
     </div>
 
@@ -105,16 +104,123 @@
       <input
         type="date"
         id="shipping-date"
-        name="properties[Desired Shipping Date]"
+        data-gift-property-name="Desired Shipping Date" 
         min="{{ 'now' | date: '%Y-%m-%d' }}"
         required
+        class="gift-form-input"
+        value=""
       >
     </div>
 
+    <script>
+      (function() {
+        const giftContainer = document.getElementById('gift-form-container');
+        if (!giftContainer) return;
+
+        const giftInputs = giftContainer.querySelectorAll('.gift-form-input');
+        
+        // Function to find the main product form
+        function findProductForm() {
+          let form = document.querySelector('[id^="rc-form-"]'); // Check for Subscription App form first
+          if (form) return form;
+          form = document.querySelector('[id^="product-form-"], [id^="product_form_"]'); // Check for theme's default ID
+          if (form) return form;
+          form = document.querySelector('form[action$="/cart/add"]'); // Fallback
+          return form;
+        }
+
+        // Function to inject hidden fields into the main form
+        function injectHiddenInputs(form) {
+          // 1. Remove old injected gift inputs to avoid duplicates
+          form.querySelectorAll('.injected-gift-property').forEach(el => el.remove());
+
+          let allFilled = true;
+          
+          // 2. Inject custom gift inputs only if they have a value and validation passes
+          giftInputs.forEach(input => {
+             // Basic required validation check
+             if (input.required && !input.value) {
+                allFilled = false;
+                // You might want to show an error message here in a real scenario
+             }
+             
+             if (input.value) {
+                const propertyName = input.getAttribute('data-gift-property-name');
+                if (propertyName) {
+                    const hiddenInput = document.createElement('input');
+                    hiddenInput.type = 'hidden';
+                    // This is the correct format for line item properties
+                    hiddenInput.name = `properties[${propertyName}]`; 
+                    hiddenInput.value = input.value;
+                    hiddenInput.className = 'injected-gift-property'; // Custom class for removal
+                    form.appendChild(hiddenInput);
+                }
+             }
+          });
+          
+          // Note: The subscription options (Size, Frequency, Duration) are usually
+          // handled by the subscription app or are standard variant selections, 
+          // and are typically already inside the main product form with names like 
+          // 'properties[...]' or 'id'. They should be captured automatically when 
+          // the main form submits along with your injected custom properties. 
+          // No need to inject them again.
+        }
+        
+        // This function will run when "Add to Cart" is clicked
+        function handleAddToCartClick() {
+            const productForm = findProductForm();
+            if (productForm) {
+                // 1. Pehle inputs inject karo
+                injectHiddenInputs(productForm);
+                
+                // 2. For AJAX submits, remove the injected inputs shortly after to prevent duplicates on next click
+                setTimeout(() => {
+                    productForm.querySelectorAll('.injected-gift-property').forEach(el => el.remove());
+                }, 100); 
+            }
+        }
+        
+        function setupButtonListeners() {
+            const productForm = findProductForm();
+            if (!productForm) return;
+
+            // Target the main submit button
+            const addToCartButton = productForm.querySelector('[name="add"]'); 
+
+            if (addToCartButton) {
+                addToCartButton.removeEventListener('click', handleAddToCartClick);
+                addToCartButton.addEventListener('click', handleAddToCartClick);
+            }
+            
+            // Also attach to the form submit event for full page reloads
+            productForm.removeEventListener('submit', handleAddToCartClick); 
+            productForm.addEventListener('submit', handleAddToCartClick);
+        }
+        
+        // --- Setup Logic ---
+        setupButtonListeners();
+        
+        // Use MutationObserver for complex themes/subscription apps
+        const observer = new MutationObserver((mutationsList, observer) => {
+            if (findProductForm()) {
+                 setupButtonListeners();
+            }
+        });
+
+        // Observe the main product section for form changes
+        const productSection = document.querySelector('main'); 
+        if (productSection) {
+             observer.observe(productSection, { childList: true, subtree: true });
+        }
+      })();
+    </script>
   </div>
 
 {% endif %}
 
+{% comment %}
+  The required schema tag is added here to fix the missing tag error.
+{% endcomment %}
 {% schema %}
   {
     "name": "Gift Details Form",
