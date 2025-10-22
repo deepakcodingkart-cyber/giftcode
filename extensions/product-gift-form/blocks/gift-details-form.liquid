@@ -1,18 +1,32 @@
 {%- comment -%}
   App Block: Gift Details Form
-  Only shows the form if the product title contains the word "gift" (case-insensitive).
+  Shows the form if:
+  1. The product title contains the word "gift" (case-insensitive).
+  2. The product belongs to a collection with the handle "gift-section".
 {%- endcomment -%}
 
 {% liquid
   assign product_title_lower = product.title | downcase
   assign is_gift_product = false
+
+  # Check 1: Product Title contains 'gift'
   if product_title_lower contains 'gift'
     assign is_gift_product = true
   endif
+
+  # Check 2: Product belongs to 'gift-section' collection
+  unless is_gift_product
+    for collection in product.collections
+      if collection.handle == 'gift-section'
+        assign is_gift_product = true
+        break
+      endif
+    endfor
+  endunless
 %}
 
 {% comment %}
-  Check the condition here. If 'is_gift_product' is true, the content inside will render.
+  The entire form UI is rendered only if the 'is_gift_product' flag is true.
 {% endcomment %}
 {% if is_gift_product %}
 
@@ -108,11 +122,11 @@
     "settings": [
       {
         "type": "header",
-        "content": "Gift Form Settings"
+        "content": "Gift Form Logic"
       },
       {
         "type": "paragraph",
-        "content": "This block is designed to ONLY show on products whose title contains the word 'Gift'."
+        "content": "This block is designed to ONLY show on products whose title contains 'Gift' OR are in the 'gift-section' collection."
       }
     ]
   }
