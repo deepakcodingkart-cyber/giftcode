@@ -1,0 +1,119 @@
+{%- comment -%}
+  App Block: Gift Details Form
+  Only shows the form if the product title contains the word "gift" (case-insensitive).
+{%- endcomment -%}
+
+{% liquid
+  assign product_title_lower = product.title | downcase
+  assign is_gift_product = false
+  if product_title_lower contains 'gift'
+    assign is_gift_product = true
+  endif
+%}
+
+{% comment %}
+  Check the condition here. If 'is_gift_product' is true, the content inside will render.
+{% endcomment %}
+{% if is_gift_product %}
+
+  <div class="app-gift-form-container">
+    <h2>Personalize Your Gift</h2>
+    <p>Enter the recipient's details and your desired shipping date.</p>
+
+    <style>
+      /* Basic, non-intrusive styling for a consistent look. */
+      .app-gift-form-container {
+        padding: 15px 0;
+        border-top: 1px solid #ddd;
+        margin-top: 20px;
+      }
+      .app-gift-form-container h2 {
+        margin-top: 0;
+        font-size: 1.2em;
+      }
+      .app-gift-form-container label {
+        display: block;
+        font-weight: 500;
+        margin-top: 10px;
+      }
+      .app-gift-form-container input[type="text"],
+      .app-gift-form-container input[type="email"],
+      .app-gift-form-container input[type="date"],
+      .app-gift-form-container textarea {
+        width: 100%;
+        padding: 10px;
+        margin-top: 5px;
+        margin-bottom: 10px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        box-sizing: border-box;
+      }
+      .app-gift-form-container textarea {
+        resize: vertical;
+      }
+    </style>
+
+    <div class="form-field">
+      <label for="gift-recipient-name">Recipient Name</label>
+      <input
+        type="text"
+        id="gift-recipient-name"
+        name="properties[Recipient Name]"
+        placeholder="e.g., Jane Doe"
+        required
+      >
+    </div>
+
+    <div class="form-field">
+      <label for="gift-recipient-email">Recipient Email</label>
+      <input
+        type="email"
+        id="gift-recipient-email"
+        name="properties[Recipient Email]"
+        placeholder="e.g., jane@example.com"
+        required
+      >
+    </div>
+
+    <div class="form-field">
+      <label for="gift-message">Gift Message (max 200 chars)</label>
+      <textarea
+        id="gift-message"
+        name="properties[Gift Message]"
+        placeholder="Write your special message here..."
+        maxlength="200"
+        rows="4"
+      ></textarea>
+    </div>
+
+    <div class="form-field">
+      <label for="shipping-date">Desired Shipping Date</label>
+      <input
+        type="date"
+        id="shipping-date"
+        name="properties[Desired Shipping Date]"
+        min="{{ 'now' | date: '%Y-%m-%d' }}"
+        required
+      >
+    </div>
+
+  </div>
+
+{% endif %}
+
+{% schema %}
+  {
+    "name": "Gift Details Form",
+    "target": "section",
+    "settings": [
+      {
+        "type": "header",
+        "content": "Gift Form Settings"
+      },
+      {
+        "type": "paragraph",
+        "content": "This block is designed to ONLY show on products whose title contains the word 'Gift'."
+      }
+    ]
+  }
+{% endschema %}
