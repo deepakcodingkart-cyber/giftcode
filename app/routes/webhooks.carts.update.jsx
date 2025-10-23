@@ -2,11 +2,9 @@
 
 export async function action({ request }) {
   try {
-    console.log('🛒 Cart Created Webhook Triggered');
     const cartData = await request.json(); // Read Shopify webhook data
     console.log('🛒 Cart Created Webhook Triggered:', cartData);
 
-    console.log('🛒 Cart Created Webhook Triggered:', cartData.line_items[0].properties);
 
     // ✅ Send success response to Shopify
     return new Response('Webhook received', { status: 200 });
