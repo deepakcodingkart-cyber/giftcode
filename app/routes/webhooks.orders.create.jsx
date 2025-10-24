@@ -4,27 +4,27 @@ import db from "../db.server.js";
 import { sendGiftCardEmail } from "../utils/giftEmail.jsx";
 import { createDiscountOnShopify } from "../utils/discountMutation.js";
 import { getAccessToken } from "../utils/getAccessToken.js";
+import { getCustomerFromShopify } from "../utils/getUserByEmail.js";
 
 export const action = async ({ request }) => {
   console.log("👉 Webhook - orders/create triggered");
-
   try {
+
     const eventId = request.headers.get("x-shopify-event-id");
     if (isDuplicateWebhook(eventId)) {
       console.log(`⚠️ Duplicate Webhook received and ignored: ${eventId}`);
       return new Response("ok", { status: 200 });
     }
 
-    const { admin, payload } = await authenticate.webhook(request);
+    const { payload } = await authenticate.webhook(request);
     const shopName = process.env.SHOP_NAME;
     const accessToken = await getAccessToken();
+
 
     console.log(`ℹ️ Processing Order ${payload.name} for shop: ${shopName}`);
 
     // Check if the order contains a gift product
     const giftItem = payload.line_items?.find(item =>
-      item.name?.toLowerCase().includes("gift") ||
-      item.title?.toLowerCase().includes("gift") ||
       item.properties?.some(
         prop =>
           prop.name === "Recipient Name" ||
@@ -33,19 +33,27 @@ export const action = async ({ request }) => {
       )
     );
 
+    console.log("🎁 Gift product detected. Starting gift card flow.");
+
+
     if (!giftItem) {
       console.log("ℹ️ No gift product detected. Exiting flow.");
       return new Response("ok", { status: 200 });
     }
+    const recipientProperty = giftItem.properties.find(p => p.name === "Recipient Email");
+    const customer = await getCustomerFromShopify(shopName, accessToken, recipientProperty.value);
+    console.log("🚀 ~ action ~ customer:", customer)
 
-    console.log("🎁 Gift product detected. Starting gift card flow.");
 
     const giftCardCode = `GIFT${payload.order_number || Date.now()}`;
     const orderTotalPrice = parseFloat(payload.current_total_price || payload.total_price).toFixed(2);
+    const recipientNameProperty = giftItem.properties.find(p => p.name === "Recipient Name");
+
+
 
     // --- Create 100% Discount on Shopify ---
     const discountData = {
-      selectedCustomersDetails: payload.customer.admin_graphql_api_id,
+      selectedCustomersDetails: customer?.id,
       selectedVariantsDetails: payload.line_items,
       discountSettings: {
         valueType: "Amount",
@@ -79,9 +87,6 @@ export const action = async ({ request }) => {
 
     // --- Send Gift Card Email ---
     try {
-      const recipientProperty = giftItem.properties.find(p => p.name === "Recipient Email");
-      const recipientNameProperty = giftItem.properties.find(p => p.name === "Recipient Name");
-
       await sendGiftCardEmail({
         toEmail: recipientProperty?.value || payload.customer?.email,
         recipientName: recipientNameProperty?.value || payload.customer?.first_name,
