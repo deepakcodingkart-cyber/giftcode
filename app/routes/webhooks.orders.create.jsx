@@ -4,7 +4,7 @@ import db from "../db.server.js";
 import { sendGiftCardEmail } from "../utils/giftEmail.jsx";
 import { createDiscountOnShopify } from "../utils/discountMutation.js";
 import { getAccessToken } from "../utils/getAccessToken.js";
-import { getCustomerFromShopify } from "../utils/getUserByEmail.js";
+// import { getCustomerFromShopify } from "../utils/getUserByEmail.js";
 
 export const action = async ({ request }) => {
   console.log("👉 Webhook - orders/create triggered");
@@ -40,27 +40,19 @@ export const action = async ({ request }) => {
       console.log("ℹ️ No gift product detected. Exiting flow.");
       return new Response("ok", { status: 200 });
     }
+
     const recipientProperty = giftItem.properties.find(p => p.name === "Recipient Email");
-    const customer = await getCustomerFromShopify(shopName, accessToken, recipientProperty.value);
-    console.log("🚀 ~ action ~ customer:", customer)
-
-
+    const recipientNameProperty = giftItem.properties.find(p => p.name === "Recipient Name");
     const giftCardCode = `GIFT${payload.order_number || Date.now()}`;
     const orderTotalPrice = parseFloat(payload.current_total_price || payload.total_price).toFixed(2);
-    const recipientNameProperty = giftItem.properties.find(p => p.name === "Recipient Name");
 
 
 
     // --- Create 100% Discount on Shopify ---
-    const discountData = {
-      selectedCustomersDetails: customer?.id,
-      selectedVariantsDetails: payload.line_items,
-      discountSettings: {
-        valueType: "Amount",
-        value: orderTotalPrice,
-        code: giftCardCode,
-        title: `Discount for Gift Card ${giftCardCode}`
-      }
+     const discountData = {
+      code: giftCardCode,
+      title: `Gift Card Discount ${giftCardCode}`,
+      value: orderTotalPrice, // Amount discount (Gift card logic)
     };
 
     try {
