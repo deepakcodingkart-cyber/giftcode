@@ -22,9 +22,13 @@ const shopify = shopifyApp({
     deliveryMethod: DeliveryMethod.Http,
     callbackUrl: '/webhooks/carts/update',
   },
-  ORDERS_CREATE: {
+  // ORDERS_CREATE: {
+  //   deliveryMethod: DeliveryMethod.Http,
+  //   callbackUrl: '/webhooks/orders/create',
+  // },
+  ORDERS_PAID: {
     deliveryMethod: DeliveryMethod.Http,
-    callbackUrl: '/webhooks/orders/create',
+    callbackUrl: '/webhooks/orders/paid',
   },
 },
 
@@ -35,7 +39,8 @@ hooks: {
       await shopify.registerWebhooks({ session });
       console.log(`✅ Webhook registered for: ${session.shop}`);
       console.log(`- CARTS_UPDATE: /webhooks/carts/update`);
-      console.log(`- ORDERS_CREATE: /webhooks/orders/create`);
+      // console.log(`- ORDERS_CREATE: /webhooks/orders/create`);
+      console.log(`- ORDERS_PAID: /webhooks/orders/paid`);
     } catch (error) {
       console.error('❌ Webhook registration failed:', error);
     }
