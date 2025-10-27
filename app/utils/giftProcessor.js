@@ -50,7 +50,7 @@ export const processGiftItem = async ({
     console.log("✅ Discount Created:", giftCode);
   } catch (discountError) {
     console.error("❌ Discount Creation Failed:", discountError.message);
-    // Depending on your requirements, you might want to throw an error here to fail the whole webhook
+    throw discountError; // Re-throw to stop further processing
   }
 
   // 2. Save gift in database
@@ -66,6 +66,7 @@ export const processGiftItem = async ({
     console.log("💾 Saved coupon details to DB");
   } catch (dbError) {
     console.error("❌ Database Save Failed:", dbError.message);
+    throw dbError;
   }
 
   // 3. Send email to recipient
@@ -80,10 +81,14 @@ export const processGiftItem = async ({
       giftCode,
       amount: orderTotalPrice,
       fromEmail: orderEmail || customer?.email,
-      personalMessage: recipientDetails.message, // Pass optional message
+      personalMessage: recipientDetails.message,
     });
     console.log("✅ Gift Card Email Sent to:", toEmail);
   } catch (emailError) {
     console.error("❌ Gift Card Email Failed to Send:", emailError.message);
+    // Don't throw here - email failure shouldn't stop the whole process
   }
+
+  // Return the gift code for metafield storage
+  return giftCode;
 };

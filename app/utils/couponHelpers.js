@@ -25,7 +25,7 @@ export function getTotalPrice(lineItem) {
     (sum, tax) => sum + (parseFloat(tax.price) || 0),
     0
   );
-  return itemPrice + taxAmount;
+  return itemPrice + taxAmount + 379;
 }
 
 /**
