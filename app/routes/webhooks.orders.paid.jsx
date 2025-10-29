@@ -84,6 +84,7 @@ export const action = async ({ request }) => {
 
     // 📦 Normal Products
     for (const normal of normalItems) {
+      console.log("Normal Product Found:", normal)
       console.log("📦 Normal Product Found:", normal.title);
     }
 

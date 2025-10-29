@@ -21,11 +21,7 @@ export const generateRandomString = (length = 4) => {
  */
 export function getTotalPrice(lineItem) {
   const itemPrice = parseFloat(lineItem.price) || 0;
-  const taxAmount = lineItem.tax_lines.reduce(
-    (sum, tax) => sum + (parseFloat(tax.price) || 0),
-    0
-  );
-  return itemPrice + taxAmount + 379;
+  return itemPrice ;
 }
 
 /**
